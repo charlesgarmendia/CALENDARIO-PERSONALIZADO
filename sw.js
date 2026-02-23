@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mariangel-calendar-v1.2';
+const CACHE_NAME = 'mariangel-calendar-v1.3';
 const urlsToCache = [
   '/',
   '/manifest.json',
