@@ -111,7 +111,7 @@
             text-shadow: 0 0 10px rgba(255,215,0,0.8);
         }
 
-        /* Botón de descarga amarillo */
+        /* Botón de descarga amarillo - SIEMPRE VISIBLE EN WEB */
         .download-btn {
             background: linear-gradient(145deg, #ffd700, #ffa500);
             border: none;
@@ -129,14 +129,11 @@
             width: fit-content;
             border: 2px solid white;
             animation: pulse 2s infinite;
+            /* El botón SIEMPRE es visible por defecto, solo se oculta en la app instalada */
         }
 
-        .download-btn:active {
-            transform: translateY(5px);
-            box-shadow: 0 5px 0 #b8860b, 0 5px 20px rgba(255,215,0,0.5);
-        }
-
-        .download-btn.hidden {
+        /* Clase para ocultar el botón SOLO cuando la app está instalada */
+        .download-btn.hidden-in-app {
             display: none;
         }
 
@@ -611,7 +608,7 @@
         </div>
     </div>
 
-    <!-- Botón de descarga amarillo -->
+    <!-- Botón de descarga amarillo - AHORA SIEMPRE VISIBLE EN WEB -->
     <button id="downloadAppBtn" class="download-btn" onclick="installPWA()">📲 DESCARGAR APP</button>
 
     <div class="months-grid" id="months-grid">
@@ -710,28 +707,42 @@
     let deferredPrompt;
     const downloadBtn = document.getElementById('downloadAppBtn');
 
-    // Detectar si la app ya está instalada
-    window.addEventListener('load', () => {
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                            window.navigator.standalone || 
-                            document.referrer.includes('android-app://');
-        
-        if (isStandalone) {
-            downloadBtn.classList.add('hidden');
+    // Función para verificar si la app está instalada (standalone)
+    function isAppInstalled() {
+        return window.matchMedia('(display-mode: standalone)').matches || 
+               window.navigator.standalone === true;
+    }
+
+    // Actualizar visibilidad del botón de descarga
+    function updateDownloadButtonVisibility() {
+        // El botón SOLO se oculta si la app está instalada
+        if (isAppInstalled()) {
+            downloadBtn.classList.add('hidden-in-app');
+        } else {
+            // En la web, siempre visible (quitamos la clase si existía)
+            downloadBtn.classList.remove('hidden-in-app');
         }
+    }
+
+    // Detectar cambios en el modo de visualización (útil para algunos navegadores)
+    window.matchMedia('(display-mode: standalone)').addEventListener('change', (e) => {
+        updateDownloadButtonVisibility();
     });
 
     // Capturar el evento beforeinstallprompt
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                            window.navigator.standalone;
-        
-        if (!isStandalone) {
-            downloadBtn.classList.remove('hidden');
-        }
+        // No ocultamos el botón aquí, solo actualizamos según el estado de instalación
+        updateDownloadButtonVisibility();
+    });
+
+    // Cuando se instala la app
+    window.addEventListener('appinstalled', () => {
+        console.log('✅ PWA instalada correctamente');
+        deferredPrompt = null;
+        // Ocultar el botón porque ahora la app está instalada
+        updateDownloadButtonVisibility();
     });
 
     // Función para instalar la PWA
@@ -746,7 +757,7 @@
         deferredPrompt.userChoice.then((choiceResult) => {
             if (choiceResult.outcome === 'accepted') {
                 console.log('✅ Usuario aceptó instalar la app');
-                downloadBtn.classList.add('hidden');
+                // No ocultamos inmediatamente, esperamos el evento appinstalled
             } else {
                 console.log('❌ Usuario canceló la instalación');
             }
@@ -754,19 +765,14 @@
         });
     }
 
-    // También ocultar el botón si la app se instala después
-    window.addEventListener('appinstalled', () => {
-        console.log('✅ PWA instalada correctamente');
-        downloadBtn.classList.add('hidden');
-        deferredPrompt = null;
-    });
-
     // Inicialización
     window.onload = () => {
         updateGreeting();
         renderMonths();
         updateDaysScreen();
         randomizeImage();
+        // Actualizar visibilidad del botón al cargar la página
+        updateDownloadButtonVisibility();
     };
 
     function updateGreeting() {
