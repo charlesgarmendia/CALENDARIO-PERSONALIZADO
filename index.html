@@ -425,32 +425,6 @@
             box-shadow: 0 0 20px gold;
         }
 
-        /* Botón flotante */
-        .fab {
-            position: fixed;
-            bottom: 120px;
-            right: 20px;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(145deg, var(--gold), var(--gold-dark));
-            border: none;
-            color: var(--dark);
-            font-size: 2rem;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 5px 20px rgba(255,215,0,0.5);
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-
-        .fab:active {
-            transform: scale(0.9) rotate(90deg);
-        }
-
         /* Upload area */
         .upload-area {
             display: flex;
@@ -544,9 +518,6 @@
         </div>
     </div>
 </div>
-
-<!-- Botón flotante para cambiar imagen -->
-<button class="fab" onclick="randomizeImage()">✨</button>
 
 <script>
     // Configuración
@@ -646,7 +617,7 @@
                 monthImage = userImages[Math.floor(Math.random() * userImages.length)];
             } else {
                 const r = Math.floor(Math.random() * totalDefaultImages) + 1;
-                monthImage = `album/${r}.png`;
+                monthImage = `${r}.png`; // Ruta modificada: imágenes en la raíz
             }
             
             card.style.backgroundImage = `url('${monthImage}')`;
@@ -748,7 +719,7 @@
             finalImg = userImages[Math.floor(Math.random() * userImages.length)];
         } else {
             const r = Math.floor(Math.random() * totalDefaultImages) + 1;
-            finalImg = `album/${r}.png`;
+            finalImg = `${r}.png`; // Ruta modificada: imágenes en la raíz
         }
         
         currentPreviewImage = finalImg;
@@ -817,6 +788,7 @@
 </script>
 </body>
 </html>
+
 
 
 
