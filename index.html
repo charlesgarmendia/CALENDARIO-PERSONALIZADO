@@ -87,7 +87,7 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
             position: relative;
             z-index: 10;
-            text-align: center; /* Centrar todo el contenido */
+            text-align: center;
         }
 
         .greeting {
@@ -107,6 +107,41 @@
             color: var(--gold);
             font-weight: 700;
             text-shadow: 0 0 10px rgba(255,215,0,0.8);
+        }
+
+        /* Botón de descarga amarillo */
+        .download-btn {
+            background: linear-gradient(145deg, #ffd700, #ffa500);
+            border: none;
+            color: #1a1a2e;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 10px 0 #b8860b, 0 5px 20px rgba(255,215,0,0.5);
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 10px auto;
+            width: fit-content;
+            border: 2px solid white;
+            animation: pulse 2s infinite;
+        }
+
+        .download-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 5px 0 #b8860b, 0 5px 20px rgba(255,215,0,0.5);
+        }
+
+        .download-btn.hidden {
+            display: none;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
 
         /* Botones con efecto 3D y transparencia */
@@ -452,6 +487,9 @@
         </div>
     </div>
 
+    <!-- Botón de descarga amarillo -->
+    <button id="downloadAppBtn" class="download-btn" onclick="installPWA()">📲 DESCARGAR APP</button>
+
     <div class="months-grid" id="months-grid">
         <!-- Los meses se generarán con JS -->
     </div>
@@ -472,7 +510,7 @@
             <div class="greeting">
                 <span id="selected-month-display">Enero 2026</span>
             </div>
-            <div style="width: 40px;"></div> <!-- Espaciador para centrar -->
+            <div style="width: 40px;"></div>
         </div>
     </div>
 
@@ -512,7 +550,7 @@
 
 <script>
     // Configuración
-    const totalDefaultImages = 50; // Imágenes en carpeta /album/
+    const totalDefaultImages = 50;
     const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
     const monthsShort = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
     
@@ -523,6 +561,63 @@
     let selectedYear = currentYear;
     let userImages = JSON.parse(localStorage.getItem('user_album')) || [];
     let currentPreviewImage = '';
+    
+    // Variables para PWA
+    let deferredPrompt;
+    const downloadBtn = document.getElementById('downloadAppBtn');
+
+    // Detectar si la app ya está instalada
+    window.addEventListener('load', () => {
+        // Verificar si está en modo standalone (instalada)
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                            window.navigator.standalone || 
+                            document.referrer.includes('android-app://');
+        
+        if (isStandalone) {
+            downloadBtn.classList.add('hidden');
+        }
+    });
+
+    // Capturar el evento beforeinstallprompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // Mostrar el botón solo si no está instalada
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                            window.navigator.standalone;
+        
+        if (!isStandalone) {
+            downloadBtn.classList.remove('hidden');
+        }
+    });
+
+    // Función para instalar la PWA
+    function installPWA() {
+        if (!deferredPrompt) {
+            alert('Para instalar la app, usa el menú de tu navegador y selecciona "Añadir a pantalla de inicio"');
+            return;
+        }
+
+        deferredPrompt.prompt();
+        
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('✅ Usuario aceptó instalar la app');
+                downloadBtn.classList.add('hidden');
+            } else {
+                console.log('❌ Usuario canceló la instalación');
+            }
+            deferredPrompt = null;
+        });
+    }
+
+    // También ocultar el botón si la app se instala después
+    window.addEventListener('appinstalled', () => {
+        console.log('✅ PWA instalada correctamente');
+        downloadBtn.classList.add('hidden');
+        deferredPrompt = null;
+    });
 
     // Inicialización
     window.onload = () => {
@@ -546,7 +641,6 @@
             const card = document.createElement('div');
             card.className = 'month-card';
             
-            // Asignar una imagen aleatoria para cada mes
             let monthImage;
             if (userImages.length > 0 && Math.random() > 0.3) {
                 monthImage = userImages[Math.floor(Math.random() * userImages.length)];
@@ -558,7 +652,6 @@
             card.style.backgroundImage = `url('${monthImage}')`;
             card.onclick = () => selectMonth(index);
             
-            // Decoración especial para el mes actual
             if (index === currentMonth && currentYear === new Date().getFullYear()) {
                 card.style.borderColor = 'var(--blue)';
             }
@@ -579,7 +672,6 @@
         document.getElementById('selected-month-display').textContent = `${months[monthIndex]} ${currentYear}`;
         updateDaysScreen();
         
-        // Cambiar de pantalla
         document.getElementById('months-screen').classList.remove('active');
         document.getElementById('days-screen').classList.add('active');
     }
@@ -587,7 +679,7 @@
     function goToMonths() {
         document.getElementById('days-screen').classList.remove('active');
         document.getElementById('months-screen').classList.add('active');
-        renderMonths(); // Refrescar meses con nuevas imágenes
+        renderMonths();
     }
 
     function changeMonth(delta) {
@@ -615,27 +707,22 @@
         const firstDay = new Date(selectedYear, selectedMonth, 1).getDay();
         const lastDate = new Date(selectedYear, selectedMonth + 1, 0).getDate();
         
-        // Ajustar para que empiece en lunes (0 = domingo en JS)
         let startOffset = firstDay === 0 ? 6 : firstDay - 1;
         
-        // Celdas vacías al inicio
         for (let i = 0; i < startOffset; i++) {
             grid.innerHTML += `<div class="day-btn" style="visibility: hidden;"></div>`;
         }
         
-        // Días del mes
         const today = new Date();
         for (let d = 1; d <= lastDate; d++) {
             const dayBtn = document.createElement('button');
             dayBtn.className = 'day-btn';
             dayBtn.textContent = d;
             
-            // Marcar si es hoy
             if (d === today.getDate() && selectedMonth === today.getMonth() && selectedYear === today.getFullYear()) {
                 dayBtn.classList.add('today');
             }
             
-            // Marcar si tiene nota
             const noteId = `nota_${d}_${selectedMonth}_${selectedYear}`;
             if (localStorage.getItem(noteId)) {
                 dayBtn.classList.add('has-note');
@@ -655,7 +742,6 @@
     }
 
     function selectImageForDay(day) {
-        // Seleccionar imagen aleatoria
         let finalImg;
         
         if (userImages.length > 0 && Math.random() > 0.3) {
@@ -667,7 +753,6 @@
         
         currentPreviewImage = finalImg;
         
-        // Actualizar fondo y footer
         document.getElementById('dynamic-background').style.backgroundImage = `url('${finalImg}')`;
         document.getElementById('day-preview').src = finalImg;
     }
@@ -693,27 +778,24 @@
                 alert(`📸 ¡Foto añadida! (Total: ${userImages.length})`);
                 randomizeImage();
                 if (document.getElementById('months-screen').classList.contains('active')) {
-                    renderMonths(); // Refrescar meses si estamos en esa pantalla
+                    renderMonths();
                 }
             };
             reader.readAsDataURL(file);
         }
     }
 
-    // Cambiar año desde la pantalla de meses
     function changeYear(delta) {
         currentYear += delta;
         renderMonths();
     }
 
-    // Tecla de escape para cerrar modal
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && document.getElementById('note-modal').style.display === 'flex') {
             closeModal();
         }
     });
 
-    // Cerrar modal al hacer click fuera
     document.getElementById('note-modal').addEventListener('click', (e) => {
         if (e.target === document.getElementById('note-modal')) {
             closeModal();
@@ -735,3 +817,12 @@
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
